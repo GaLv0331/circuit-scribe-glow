@@ -40,7 +40,36 @@ void loop() {
       "Use digitalWrite() to turn the LED on (HIGH) and off (LOW)",
       "Use delay() to wait for 500 milliseconds"
     ],
-    expectedOutput: "LED should blink on and off every 500ms"
+    expectedOutput: "LED should blink on and off every 500ms",
+    testCases: [
+      {
+        id: "test1",
+        name: "Pin Configuration",
+        description: "Check if pin 13 is configured as OUTPUT",
+        expectedBehavior: {
+          type: "pin_state",
+          pin: 13,
+          expectedValue: true
+        }
+      },
+      {
+        id: "test2",
+        name: "Timing Check",
+        description: "Verify delay timing is approximately 500ms",
+        expectedBehavior: {
+          type: "timing",
+          timing: {
+            minMs: 450,
+            maxMs: 550
+          }
+        }
+      }
+    ],
+    judgeConfig: {
+      requiredFunctions: ["pinMode", "digitalWrite", "delay"],
+      maxExecutionTimeMs: 5000,
+      requiredPins: [13]
+    }
   },
   {
     id: "2",
@@ -79,7 +108,43 @@ void loop() {
       "Use analogRead(A0) to read from analog pin A0",
       "Use Serial.print() and Serial.println() to output to Serial Monitor"
     ],
-    expectedOutput: "Sensor values should be printed to Serial Monitor every second"
+    expectedOutput: "Sensor values should be printed to Serial Monitor every second",
+    testCases: [
+      {
+        id: "test1",
+        name: "Serial Initialization",
+        description: "Check if Serial communication is properly initialized",
+        expectedBehavior: {
+          type: "serial_output",
+          pattern: ".*"
+        }
+      },
+      {
+        id: "test2",
+        name: "Analog Reading",
+        description: "Verify analogRead is used for pin A0",
+        expectedBehavior: {
+          type: "serial_output",
+          pattern: "Sensor|Value|\\d+"
+        }
+      },
+      {
+        id: "test3",
+        name: "Timing Check",
+        description: "Verify 1 second delay between readings",
+        expectedBehavior: {
+          type: "timing",
+          timing: {
+            minMs: 900,
+            maxMs: 1100
+          }
+        }
+      }
+    ],
+    judgeConfig: {
+      requiredFunctions: ["Serial.begin", "analogRead", "Serial.print"],
+      maxExecutionTimeMs: 5000
+    }
   },
   {
     id: "3",
@@ -130,7 +195,37 @@ void loop() {
       "Reverse fadeAmount when reaching 0 or 255",
       "Use a small delay for smooth fading effect"
     ],
-    expectedOutput: "LED should smoothly fade in and out continuously"
+    expectedOutput: "LED should smoothly fade in and out continuously",
+    testCases: [
+      {
+        id: "test1",
+        name: "PWM Usage",
+        description: "Check if analogWrite is used for PWM control",
+        expectedBehavior: {
+          type: "pwm_value",
+          pin: 9,
+          expectedValue: 128,
+          tolerance: 50
+        }
+      },
+      {
+        id: "test2",
+        name: "Fade Timing",
+        description: "Verify smooth fading with appropriate delay",
+        expectedBehavior: {
+          type: "timing",
+          timing: {
+            minMs: 20,
+            maxMs: 50
+          }
+        }
+      }
+    ],
+    judgeConfig: {
+      requiredFunctions: ["analogWrite"],
+      maxExecutionTimeMs: 5000,
+      requiredPins: [9]
+    }
   },
   {
     id: "4",
@@ -205,6 +300,35 @@ void loop() {
       "Use millis() for timing-based debouncing",
       "Toggle LED state only on button press (LOW with pullup)"
     ],
-    expectedOutput: "LED should toggle each time button is pressed, without multiple triggers"
+    expectedOutput: "LED should toggle each time button is pressed, without multiple triggers",
+    testCases: [
+      {
+        id: "test1",
+        name: "Pin Configuration",
+        description: "Check if button and LED pins are properly configured",
+        expectedBehavior: {
+          type: "pin_state",
+          pin: 2,
+          expectedValue: true
+        }
+      },
+      {
+        id: "test2",
+        name: "Debouncing Logic",
+        description: "Verify debouncing implementation using millis()",
+        expectedBehavior: {
+          type: "timing",
+          timing: {
+            minMs: 40,
+            maxMs: 60
+          }
+        }
+      }
+    ],
+    judgeConfig: {
+      requiredFunctions: ["pinMode", "digitalRead", "digitalWrite", "millis"],
+      maxExecutionTimeMs: 5000,
+      requiredPins: [2, 13]
+    }
   }
 ];

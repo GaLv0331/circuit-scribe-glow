@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Play, RotateCcw, Eye, EyeOff, Lightbulb } from "lucide-react";
-import { Question, CompilationResult } from "@/types/questions";
+import { Question, CompilationResult, JudgeResult } from "@/types/questions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArduinoJudge } from "@/services/arduinoJudge";
+import { Progress } from "@/components/ui/progress";
 
 interface CodeEditorProps {
   question: Question;
@@ -13,64 +15,27 @@ interface CodeEditorProps {
 
 export function CodeEditor({ question }: CodeEditorProps) {
   const [code, setCode] = useState(question.starterCode);
-  const [compilationResult, setCompilationResult] = useState<CompilationResult | null>(null);
+  const [judgeResult, setJudgeResult] = useState<JudgeResult | null>(null);
   const [isCompiling, setIsCompiling] = useState(false);
   const [showSolution, setShowSolution] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const judge = ArduinoJudge.getInstance();
 
-  const simulateCompilation = async (code: string): Promise<CompilationResult> => {
-    // Simulate compilation delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Basic syntax checking simulation
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Check for common issues
-    if (!code.includes('void setup()')) {
-      errors.push("Missing 'void setup()' function");
-    }
-    if (!code.includes('void loop()')) {
-      errors.push("Missing 'void loop()' function");
-    }
-    if (code.includes('TODO')) {
-      warnings.push("Code contains TODO comments - make sure to complete implementation");
-    }
-
-    // Check for specific question requirements
-    if (question.id === "1") {
-      if (!code.includes('pinMode') && !code.includes('TODO')) {
-        errors.push("Missing pinMode() function call");
-      }
-      if (!code.includes('digitalWrite') && !code.includes('TODO')) {
-        errors.push("Missing digitalWrite() function call");
-      }
-    }
-
-    const success = errors.length === 0;
-    const output = success 
-      ? `Compilation successful!\n\nExpected behavior: ${question.expectedOutput}\n\nCode uploaded to Arduino successfully.`
-      : "Compilation failed. Please fix the errors and try again.";
-
-    return {
-      success,
-      output,
-      errors: errors.length > 0 ? errors : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined
-    };
-  };
-
-  const handleCompile = async () => {
+  const handleCompileAndJudge = async () => {
     setIsCompiling(true);
-    setCompilationResult(null);
+    setJudgeResult(null);
     
     try {
-      const result = await simulateCompilation(code);
-      setCompilationResult(result);
+      const result = await judge.judgeCode(code, question);
+      setJudgeResult(result);
     } catch (error) {
-      setCompilationResult({
+      setJudgeResult({
         success: false,
-        errors: ["Compilation service unavailable. Please try again later."]
+        score: 0,
+        maxScore: question.testCases.length,
+        testResults: [],
+        executionTime: 0,
+        feedback: "Judge service unavailable. Please try again later."
       });
     } finally {
       setIsCompiling(false);
@@ -79,7 +44,7 @@ export function CodeEditor({ question }: CodeEditorProps) {
 
   const handleReset = () => {
     setCode(question.starterCode);
-    setCompilationResult(null);
+    setJudgeResult(null);
     setShowSolution(false);
   };
 
@@ -191,58 +156,91 @@ export function CodeEditor({ question }: CodeEditorProps) {
             />
             <div className="flex gap-2">
               <Button 
-                onClick={handleCompile} 
+                onClick={handleCompileAndJudge} 
                 disabled={isCompiling}
                 className="bg-accent hover:bg-accent/90"
               >
                 <Play className="h-4 w-4 mr-2" />
-                {isCompiling ? 'Compiling...' : 'Compile & Upload'}
+                {isCompiling ? 'Judging...' : 'Compile & Test'}
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Compilation Results */}
-      {compilationResult && (
+      {/* Judge Results */}
+      {judgeResult && (
         <Card>
           <CardHeader>
-            <CardTitle className={`text-lg ${compilationResult.success ? 'text-green-600' : 'text-red-600'}`}>
-              {compilationResult.success ? '✅ Compilation Successful' : '❌ Compilation Failed'}
+            <div className="flex items-center justify-between">
+              <CardTitle className={`text-lg ${judgeResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                {judgeResult.success ? '✅ All Tests Passed!' : '❌ Some Tests Failed'}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  Score: {judgeResult.score}/{judgeResult.maxScore}
+                </span>
+                <Progress 
+                  value={(judgeResult.score / judgeResult.maxScore) * 100} 
+                  className="w-20"
+                />
+              </div>
+            </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {compilationResult.output && (
-              <div className="bg-gray-100 p-3 rounded font-mono text-sm">
-                <pre className="whitespace-pre-wrap">{compilationResult.output}</pre>
-              </div>
-            )}
-            
-            {compilationResult.errors && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-red-600">Errors:</h4>
-                <ul className="space-y-1">
-                  {compilationResult.errors.map((error, index) => (
-                    <li key={index} className="text-red-600 text-sm flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{error}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {compilationResult.warnings && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-yellow-600">Warnings:</h4>
-                <ul className="space-y-1">
-                  {compilationResult.warnings.map((warning, index) => (
-                    <li key={index} className="text-yellow-600 text-sm flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{warning}</span>
-                    </li>
-                  ))}
-                </ul>
+            {/* Overall Feedback */}
+            <div className="bg-gray-100 p-3 rounded">
+              <pre className="whitespace-pre-wrap text-sm">{judgeResult.feedback}</pre>
+            </div>
+
+            {/* Execution Stats */}
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <span>Execution Time: {judgeResult.executionTime}ms</span>
+              {judgeResult.memoryUsage && (
+                <span>Memory Usage: {judgeResult.memoryUsage} bytes</span>
+              )}
+            </div>
+
+            {/* Test Results */}
+            {judgeResult.testResults.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium">Test Results:</h4>
+                {judgeResult.testResults.map((testResult, index) => (
+                  <div 
+                    key={testResult.testCase.id}
+                    className={`p-3 rounded border ${
+                      testResult.passed 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-red-50 border-red-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">
+                        {testResult.passed ? '✅' : '❌'} {testResult.testCase.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {testResult.executionTime}ms
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {testResult.testCase.description}
+                    </p>
+                    {testResult.error && (
+                      <p className="text-sm text-red-600">
+                        Error: {testResult.error}
+                      </p>
+                    )}
+                    {testResult.actualValue !== undefined && testResult.expectedValue !== undefined && (
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Expected: </span>
+                        <span className="font-mono">{testResult.expectedValue}</span>
+                        <span className="text-muted-foreground"> | Got: </span>
+                        <span className="font-mono">{testResult.actualValue}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
