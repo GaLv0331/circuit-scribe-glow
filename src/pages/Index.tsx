@@ -3,11 +3,13 @@ import { BlogHeader } from "@/components/BlogHeader";
 import { BlogCard } from "@/components/BlogCard";
 import { BlogPostDetail } from "@/components/BlogPostDetail";
 import { NewPostForm } from "@/components/NewPostForm";
+import { QuestionsSection } from "@/components/QuestionsSection";
 import { samplePosts } from "@/data/samplePosts";
+import { sampleQuestions } from "@/data/sampleQuestions";
 import { BlogPost } from "@/types/blog";
 import { useToast } from "@/hooks/use-toast";
 
-type ViewMode = 'list' | 'detail' | 'create';
+type ViewMode = 'list' | 'detail' | 'create' | 'questions';
 
 const Index = () => {
   const [posts, setPosts] = useState<BlogPost[]>(samplePosts);
@@ -17,6 +19,10 @@ const Index = () => {
 
   const handleCreatePost = () => {
     setCurrentView('create');
+  };
+
+  const handleQuestionsClick = () => {
+    setCurrentView('questions');
   };
 
   const handlePostClick = (post: BlogPost) => {
@@ -46,9 +52,25 @@ const Index = () => {
     return <BlogPostDetail post={selectedPost} onBack={handleBackToList} />;
   }
 
+  if (currentView === 'questions') {
+    return (
+      <div className="min-h-screen bg-background">
+        <BlogHeader 
+          onCreatePost={handleCreatePost} 
+          onQuestionsClick={handleQuestionsClick}
+          currentView={currentView}
+        />
+        <QuestionsSection questions={sampleQuestions} />
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background">
-      <BlogHeader onCreatePost={handleCreatePost} />
+      <BlogHeader 
+        onCreatePost={handleCreatePost} 
+        onQuestionsClick={handleQuestionsClick}
+        currentView={currentView}
+      />
       
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
