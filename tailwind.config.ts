@@ -18,6 +18,11 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'system-ui', 'sans-serif'],
+				mono: ['Roboto Mono', 'monospace'],
+				heading: ['Space Grotesk', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -61,7 +66,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom electronics theme colors
+				'deep-blue': 'hsl(var(--deep-blue))',
+				'neon-green': 'hsl(var(--neon-green))',
+				'code-bg': 'hsl(var(--code-bg))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
